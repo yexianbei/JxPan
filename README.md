@@ -21,26 +21,30 @@
 - 🔗 **直链解析**：支持解析网盘分享链接，获取文件真实下载直链
 - 📡 **JSON 输出**：标准化 API 响应，方便二次开发集成
 - 🔄 **302 重定向**：支持直接重定向到下载地址，实现无缝下载体验
+- 📱 **扫码登录**：支持阿里云盘、光鸭云盘、夸克网盘、UC网盘、移动云盘扫码登录配置
 - 🛡️ **边缘计算**：基于 Cloudflare Workers 平台，避免 IP 封禁
 - ⚡ **高速稳定**：利用 CF 全球网络，解析速度快、可用性高
 - 🌍 **全球访问**：自动选择最优节点，无视地域限制
 - 📊 **统计功能**：记录解析次数、成功/失败次数、缓存命中次数
+- 💾 **D1 数据库存储**：使用 Cloudflare D1 SQL 数据库存储数据
+- 🔐 **数据加密**：所有敏感数据 AES 加密存储
 
 ***
 
 ## 🚀 支持平台
 
-| 平台     | 域名                           | 状态    |
-| ------ | ---------------------------- | ----- |
-| 阿里云盘   | alipan.com / aliyundrive.com | ✅ 已支持 |
-| 夸克网盘   | pan.quark.cn                 | ✅ 已支持 |
-| UC网盘   | drive.uc.cn / fast.uc.cn     | ✅ 已支持 |
-| 移动云盘   | yun.139.com / caiyun.139.com | ✅ 已支持 |
-| 小飞机网盘  | feijipan.com                 | ✅ 已支持 |
-| 蓝奏云优享版 | ilanzou.com                  | ✅ 已支持 |
-| 蓝奏云    | lanzou\*.com                 | ✅ 已支持 |
+| 平台     | 域名                           | 状态    | 扫码登录 |
+| ------ | ---------------------------- | ----- | -------- |
+| 阿里云盘   | alipan.com / aliyundrive.com | ✅ 已支持 | ✅ 支持 |
+| 夸克网盘   | pan.quark.cn                 | ✅ 已支持 | ✅ 支持 |
+| UC网盘   | drive.uc.cn / fast.uc.cn     | ✅ 已支持 | ✅ 支持 |
+| 移动云盘   | yun.139.com / caiyun.139.com | ✅ 已支持 | ✅ 支持 |
+| 小飞机网盘  | feijipan.com                 | ✅ 已支持 | -       |
+| 蓝奏云优享版 | ilanzou.com                  | ✅ 已支持 | -       |
+| 蓝奏云    | lanzou\*.com                 | ✅ 已支持 | -       |
+| 光鸭云盘   | guangyapan.com               | ✅ 已支持 | ✅ 支持 |
 
-> **注意**：阿里云盘、夸克网盘、UC网盘、移动云盘需要配置认证信息才能正常解析
+> **注意**：阿里云盘、夸克网盘、UC网盘、移动云盘、光鸭云盘需要配置认证信息才能正常解析。推荐使用后台管理面板的扫码登录功能快速配置。
 
 ***
 
@@ -59,9 +63,35 @@
 2. 将 `_worker.js` 的完整代码粘贴到编辑器中
 3. 点击 "保存并部署"
 
-#### 3. 配置环境变量（可选）
+#### 3. 配置 D1 数据库（必需）
 
-对于需要认证的网盘，需要配置以下环境变量：
+本项目使用 **Cloudflare D1 SQL 数据库** 存储数据（缓存、统计、扫码登录信息等）
+
+1. 在 Cloudflare Dashboard 中，进入 **"储存和数据库" → "D1 SQL 数据库"**
+2. 点击 **"创建数据库"**，输入名称 `jxpan`
+3. 创建完成后，进入 **"Workers & Pages" → 你的 Worker → 设置 → 绑定"**
+4. 点击 **"添加绑定" → 选择 "D1 数据库"**
+5. 变量名称填写 `jxpan`，选择刚创建的数据库
+6. 点击 **"添加绑定"**
+
+> D1 数据库表会在首次请求时自动创建，无需手动执行 SQL。
+
+#### 4. 配置 KV 存储（可选，作为回退）
+
+如果需要兼容旧版本或作为 D1 的回退方案：
+
+1. 在 Cloudflare Dashboard 中，进入 **"储存与数据库" → "Workers KV"**
+2. 点击 **"创建命名空间"**，输入名称 `jx`
+3. 回到 Worker 页面，点击 **"设置" → "绑定"**
+4. 点击 **"添加绑定" → 选择 "KV 命名空间"**
+5. 变量名称填写 `jx`，选择刚刚创建的命名空间
+6. 点击 **"添加绑定"**
+
+> 系统优先使用 D1 数据库，KV 作为回退方案。
+
+#### 5. 配置环境变量（可选）
+
+对于需要认证的网盘，可以配置以下环境变量：
 
 | 变量名                    | 说明                        | 适用平台 |
 | ---------------------- | ------------------------- | ---- |
@@ -69,33 +99,23 @@
 | `QK_COOKIE`            | 夸克网盘的 Cookie              | 夸克网盘 |
 | `UC_COOKIE`            | UC网盘的 Cookie              | UC网盘 |
 | `MCLOUD_AUTHORIZATION` | 移动云盘的 Authorization Token | 移动云盘 |
+| `GY_Login`             | 光鸭云盘的登录信息 JSON            | 光鸭云盘 |
 
 配置方法：
 
-1. 在 Worker 页面点击 "设置" → "变量"
-2. 点击 "添加变量"，输入变量名和值
-3. 点击 "保存"
+1. 在 Worker 页面点击 **"设置" → "变量"**
+2. 点击 **"添加变量"**，输入变量名和值
+3. 点击 **"保存"**
 
-#### 4. 配置 KV 存储（推荐）
+> **推荐**：通过后台管理面板 `/admin` 的扫码登录功能配置，无需手动填写环境变量。
 
-为了启用缓存机制和统计功能，需要配置 KV 存储：
+#### 6. 绑定自定义域（推荐）
 
-1. 在 Cloudflare Dashboard 中，进入 "储存与数据库" → "Workers KV"
-2. 进入界面后在右上角“创建实例”，并输入"jx"作为命名空间名称
-3. 在 Cloudflare Dashboard 中，进入 "Workers & Pages" → "KV"
-4. 点击 "创建命名空间"，输入名称（如 `jx`）
-5. 回到 Worker 页面，点击 "设置" → "KV 命名空间绑定"
-6. 点击 "添加绑定"
-7. 变量名称填写 `jx`，选择刚刚创建的 KV 命名空间
-8. 点击 "添加绑定"
-
-### 5. 绑定自定义域（推荐）
-
-1. 在 "触发器" 选项卡点击 "添加自定义域"
-2. 输入您的域名（如 `pan.yourdomain.com`），点击 "添加自定义域"
+1. 在 **"触发器"** 选项卡点击 **"添加自定义域"**
+2. 输入您的域名（如 `pan.yourdomain.com`），点击 **"添加自定义域"**
 3. 按提示完成 DNS 解析，等待证书生效
 
-### 6. 配置后台管理面板（可选）
+#### 7. 配置后台管理面板（可选）
 
 为了启用后台管理面板，需要配置以下环境变量：
 
@@ -104,17 +124,51 @@
 | `admin` | 后台登录用户名 |
 | `pass`  | 后台登录密码  |
 
-配置方法：
+配置方法同上。
 
-1. 在 Worker 页面点击 "设置" → "变量"
-2. 点击 "添加变量"，输入变量名和值
-3. 点击 "保存"
-
-### 7. 访问测试
+#### 8. 访问测试
 
 - 访问 `https://your-domain.com/` 查看使用说明
 - 访问 `https://your-domain.com/?url=分享链接` 进行解析测试
 - 访问 `https://your-domain.com/admin` 进入后台管理面板
+
+***
+
+## 📱 扫码登录功能
+
+后台管理面板 (`/admin`) 提供了便捷的扫码登录功能，支持以下网盘：
+
+### 支持扫码登录的平台
+
+| 平台     | 登录方式           | 存储位置         |
+| ------ | -------------- | ------------ |
+| 阿里云盘   | 阿里云盘 APP 扫码   | D1 / KV        |
+| 光鸭云盘   | 手机号+验证码      | D1 / KV        |
+| 夸克网盘   | 夸克 APP 扫码      | D1 / KV        |
+| UC网盘   | UC APP 扫码        | D1 / KV        |
+| 移动云盘   | 移动云盘 APP 扫码   | D1 / KV        |
+
+### 使用方式
+
+1. 访问 `https://your-domain.com/admin`
+2. 使用管理员账号登录
+3. 进入 **"控制面板"** 或 **"扫码登录"** 标签页
+4. 点击对应网盘的 **"扫码登录"** 按钮
+5. 使用对应网盘 APP 扫描二维码
+6. 扫码成功后自动保存登录信息到 D1 数据库
+7. 解析时自动优先使用扫码登录的配置信息
+
+### 前端页面配置
+
+前端解析页面也提供了手动配置入口（JSON 输入框）：
+
+- **阿里云盘**：Authorization 手动输入
+- **夸克网盘**：Cookie 手动输入
+- **UC网盘**：Cookie 手动输入
+- **移动云盘**：Authorization + Cookie 手动输入
+- **光鸭云盘**：登录信息 JSON 手动输入
+
+配置优先级：**扫码登录(D1) > 前端手动输入 > 环境变量**
 
 ***
 
@@ -252,6 +306,14 @@ GET /?action=get_records
 }
 ```
 
+#### 6. 获取登录状态
+
+```
+GET /?action=login_status
+```
+
+返回各网盘的登录状态和配置详情，用于后台管理面板显示。
+
 ***
 
 ## ⚙️ 配置说明
@@ -271,7 +333,11 @@ GET /?action=get_records
 | `UC_USER_AGENT`        | -     | UC 网盘自定义 UA              |
 | `MCLOUD_ENABLED`       | true  | 是否启用移动云盘解析               |
 | `MCLOUD_AUTHORIZATION` | -     | 移动云盘 Authorization Token |
+| `MCLOUD_COOKIE`        | -     | 移动云盘 Cookie              |
 | `MCLOUD_USER_AGENT`    | -     | 移动云盘自定义 UA               |
+| `GY_ENABLED`           | true  | 是否启用光鸭云盘解析               |
+| `GY_Login`             | -     | 光鸭云盘登录信息 JSON            |
+| `GY_USER_AGENT`        | -     | 光鸭云盘自定义 UA               |
 | `AUTO_SWITCH`          | true  | 自动切换平台 UA                |
 | `MODE`                 | pc    | 解析模式                     |
 | `REDIRECT_URL`         | false | 是否默认使用 302 重定向           |
@@ -281,29 +347,40 @@ GET /?action=get_records
 | `admin`                | -     | 后台管理面板用户名                |
 | `pass`                 | -     | 后台管理面板密码                 |
 
-### KV 存储配置
+### 存储绑定配置
 
-| 绑定名称    | 说明                    | 必需 |
-| ------- | --------------------- | -- |
-| `jx` | KV 命名空间绑定，用于存储缓存和统计数据 | 推荐 |
+| 绑定名称 | 类型   | 说明                                    | 必需 |
+| ---- | ---- | --------------------------------------- | -- |
+| `jxpan` | D1    | D1 SQL 数据库，用于存储缓存、统计数据、登录信息 | **必需** |
+| `jx`   | KV    | KV 命名空间，作为 D1 的回退存储方案              | 可选  |
 
 ### 认证信息获取方法
 
-#### 阿里云盘
+#### 方式一：扫码登录（推荐）
+
+1. 访问 `https://your-domain.com/admin`
+2. 进入 **"控制面板"** 或 **"扫码登录"** 标签
+3. 点击对应网盘的 **"扫码登录"** 按钮
+4. 使用对应网盘 APP 扫描二维码
+5. 登录成功后自动保存，无需手动复制任何信息
+
+#### 方式二：手动获取
+
+##### 阿里云盘
 
 1. 访问 <https://www.alipan.com> 并登录
 2. 按 F12 打开开发者工具 → Network
 3. 刷新页面，找到任意 API 请求
 4. 复制请求头中的 `Authorization` 字段值（包含 Bearer）
 
-#### 夸克网盘
+##### 夸克网盘
 
 1. 访问 <https://pan.quark.cn> 并登录
 2. 按 F12 打开开发者工具 → Network
 3. 刷新页面，找到任意 API 请求
 4. 复制请求头中的 `Cookie` 字段值
 
-#### UC网盘
+##### UC网盘
 
 1. 访问 <https://drive.uc.cn> 并登录
 2. 访问任意分享链接
@@ -319,12 +396,18 @@ GET /?action=get_records
 - `ctoken`（必需，用于 X-CToken 请求头）
 - `b-user-id`
 
-#### 移动云盘
+##### 移动云盘
 
 1. 访问 <https://yun.139.com> 并登录
 2. 按 F12 打开开发者工具 → Network
 3. 刷新页面，找到任意 API 请求
 4. 复制请求头中的 `Authorization` 字段值（包含 Basic）
+
+##### 光鸭云盘
+
+1. 运行项目中的 `阿里云盘扫码登录.py` 脚本（手机号+验证码登录）
+2. 或在后台管理面板中使用扫码登录功能
+3. 将生成的 JSON 登录信息配置到 `GY_Login` 环境变量中
 
 ***
 
@@ -377,6 +460,16 @@ curl "https://your-domain.com/?url=https://yun.139.com/shareweb/#/w/i/xxxxxx&typ
 curl "https://your-domain.com/?url=https://lanzoux.com/xxxxxx"
 ```
 
+### 光鸭云盘
+
+```bash
+# JSON 返回
+curl "https://your-domain.com/?url=https://www.guangyapan.com/s/xxxxxx&type=json"
+
+# 代理下载
+curl "https://your-domain.com/?url=https://www.guangyapan.com/s/xxxxxx&type=down"
+```
+
 ***
 
 ## 🔧 技术架构
@@ -392,8 +485,14 @@ curl "https://your-domain.com/?url=https://lanzoux.com/xxxxxx"
     │    │       │
 ┌───▼───┐│  ┌────▼────┐
 │ 网盘  ││  │ Cloudflare │
-│ API   ││  │    KV     │
-└───────┘│  └──────────┘
+│ API   ││  │    D1      │  ← 主存储（SQL数据库）
+└───────┘│  │   (jxpan)  │
+         │  └────┬─────┘
+         │       │ (回退)
+    ┌────▼───────▼─┐
+    │ Cloudflare    │  ← 可选回退存储
+    │    KV (jx)    │
+    └──────────────┘
          │
     ┌────▼────┐
     │ 网盘 OSS │
@@ -402,19 +501,51 @@ curl "https://your-domain.com/?url=https://lanzoux.com/xxxxxx"
 
 ### 核心模块
 
-- **CookieManager** - Cookie 缓存管理，支持 2 小时有效期
-- **AliyunPanParser** - 阿里云盘解析器
-- **QuarkParser** - 夸克网盘解析器
-- **UCParser** - UC网盘解析器
-- **MobileCloudParser** - 移动云盘解析器
+- **D1 Database Layer** - D1 SQL 数据库访问层，支持加密存储、过期清理
+- **Storage Compatibility Layer** - 存储兼容层，优先 D1，自动回退 KV
+- **CookieManager** - Cookie 缓存管理，支持有效期检测
+- **AliyunPanParser** - 阿里云盘解析器（含扫码登录 + JWT token 刷新）
+- **QuarkParser** - 夸克网盘解析器（含扫码登录）
+- **UCParser** - UC网盘解析器（含扫码登录）
+- **MobileCloudParser** - 移动云盘解析器（含扫码登录）
 - **FeijipanParser** - 小飞机网盘解析器
 - **IlanzouParser** - 蓝奏云优享版解析器
 - **LanzouParser** - 蓝奏云解析器
-- **KV Storage** - 使用 Cloudflare KV 存储缓存和统计数据
+- **GuangyaPanParser** - 光鸭云盘解析器（含扫码登录）
+- **AES128ECB Encryption** - AES-128-ECB 加密工具，保护敏感数据
 - **Cache Mechanism** - 缓存解析结果，提高响应速度
 - **Statistics** - 记录和提供解析统计数据
-- **Admin Panel** - 后台管理面板，查看解析记录和统计数据
+- **Admin Panel** - 后台管理面板，查看解析记录、统计数据、登录配置详情
 - **Authentication** - 后台登录认证系统
+- **QR Code Login** - 多网盘扫码登录系统（阿里云盘/夸克/UC/移动云盘/光鸭云盘）
+
+### 数据库表结构 (D1)
+
+```sql
+CREATE TABLE kv_store (
+    key TEXT PRIMARY KEY,      -- 键名（如 jx_total, aliyun_login_default）
+    value TEXT NOT NULL,      -- 值（通常为 AES 加密的 JSON）
+    expires_at INTEGER DEFAULT 0,  -- 过期时间戳（Unix秒），0 表示永不过期
+    created_at INTEGER DEFAULT (strftime('%s', 'now'))  -- 创建时间
+);
+CREATE INDEX idx_kv_expires ON kv_store(expires_at);  -- 过期索引，便于清理
+```
+
+**主要 Key 前缀说明：**
+
+| Key 前缀              | 用途                     | 过期时间    |
+| -------------------- | ------------------------ | --------- |
+| `jx_total`            | 解析统计数据               | 永久       |
+| `parse_`              | 解析结果缓存               | 可配置     |
+| `parse_record_`       | 解析记录                   | 7天       |
+| `aliyun_login_default` | 阿里云盘扫码登录 Authorization | 1天       |
+| `aliyun_refresh_token` | 阿里云盘 Refresh Token     | 30天      |
+| `gy_login_default`    | 光鸭云盘登录信息             | 永久       |
+| `quark_login_default`  | 夸克网盘登录 Cookie          | 永久       |
+| `uc_login_default`     | UC网盘登录 Cookie           | 永久       |
+| `mcloud_login_default` | 移动云盘登录信息             | 永久       |
+| `admin_token`         | 后台管理员 Token            | 7天       |
+| `gy_qr_` / `uc_qr_` 等 | 扫码登录临时会话数据          | 5-10分钟   |
 
 ***
 
@@ -442,22 +573,7 @@ curl "https://your-domain.com/?url=https://lanzoux.com/xxxxxx"
 
 本项目基于 [MIT License](LICENSE) 开源。
 
-***
 
-## 🤝 贡献
-
-欢迎提交 Issue 和 Pull Request！
-
-### 提交新平台支持
-
-如果你想添加新的网盘支持，请确保：
-
-1. 实现对应的 Parser 类
-2. 遵循现有的代码风格
-3. 提供完整的测试用例
-4. 更新 README.md 文档
-
-***
 
 ## 📞 联系方式
 
@@ -468,5 +584,5 @@ curl "https://your-domain.com/?url=https://lanzoux.com/xxxxxx"
 ***
 
 <p align="center">
-  Made with ❤️ by <a href="https://github.com/ByLsPro">ByLsPro</a>
+ Made with ❤️ by <a href="https://github.com/ByLsPro">ByLsPro</a>
 </p>
