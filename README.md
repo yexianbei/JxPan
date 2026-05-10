@@ -421,7 +421,7 @@ GET /?url={分享链接}&pwd={密码}&fid={第二级ID}&fid2={第三级ID}&fid3=
 **示例：解析第三层子文件夹**
 
 ```
-# 小飞机：展开 NodeVideo → Windows电脑版
+# 小飞机：展开 47096870(文件夹id) → 61047262(文件夹id)
 GET /?url=https://share.feijipan.com/s/xxxxx&fid=47096870&fid2=61047262
 
 # 返回：47096870中的61047262文件夹列表
