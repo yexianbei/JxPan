@@ -4,11 +4,8 @@
 
 ## ⭐ 项目热度
 
-## Star History
-
 [![Star History Chart](https://api.star-history.com/chart?repos=ByLsPro/JxPan&type=timeline&legend=top-left)](https://www.star-history.com/?repos=ByLsPro%2FJxPan&type=timeline&legend=top-left)
 
----
 
 ***
 
