@@ -4,7 +4,9 @@
 
 ## ⭐ 项目热度
 
-[![Stargazers over time](https://starchart.cc/ByLsPro/JxPan.svg?variant=adaptive)](https://starchart.cc/ByLsPro/JxPan)
+## Star History
+
+[![Star History Chart](https://api.star-history.com/chart?repos=ByLsPro/JxPan&type=timeline&legend=top-left)](https://www.star-history.com/?repos=ByLsPro%2FJxPan&type=timeline&legend=top-left)
 
 ---
 
