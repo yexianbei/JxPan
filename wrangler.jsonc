@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "jxpan",
+  "main": "_worker.js",
+  "compatibility_date": "2026-06-24",
+  "no_bundle": true,
+  "find_additional_modules": false,
+  "d1_databases": [
+    {
+      "binding": "jxpan",
+      "database_name": "jxpan",
+      "database_id": "936961d2-67b8-41aa-bdf1-0e1651be8f92"
+    }
+  ],
+  "routes": [
+    {
+      "pattern": "jxpan.badhabits.icu",
+      "custom_domain": true
+    }
+  ]
+}
